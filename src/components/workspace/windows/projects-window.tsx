@@ -19,60 +19,58 @@ export function ProjectsWindow() {
         </p>
       </div>
 
-      <div className="scrollbar-none min-h-0 flex-1 overflow-y-auto overscroll-contain pb-4">
-        <div className="grid gap-4 lg:grid-cols-2">
-          {projectRegistry.map((project) => (
-            <article
-              key={project.slug}
-              className="group rounded-3xl border border-white/6 bg-white/4 p-5 transition-colors duration-200 hover:border-white/10 hover:bg-white/5"
-            >
-              <div className="flex items-start justify-between gap-4">
-                <div>
-                  <p className="text-[10px] uppercase tracking-[0.28em] text-zinc-600">
-                    {project.phase}
+      <div className="scrollbar-none min-h-0 flex-1 overflow-y-auto overscroll-contain pb-4 pr-2 grid gap-4 lg:grid-cols-2 content-start">
+        {projectRegistry.map((project) => (
+          <article
+            key={project.slug}
+            className="group rounded-3xl border border-white/6 bg-white/4 p-5 transition-colors duration-200 hover:border-white/10 hover:bg-white/5"
+          >
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <p className="text-[10px] uppercase tracking-[0.28em] text-zinc-600">
+                  {project.phase}
+                </p>
+
+                <h3 className="mt-2 text-lg font-medium tracking-[-0.03em] text-zinc-100">
+                  {project.title}
+                </h3>
+              </div>
+
+              <span className="rounded-full border border-white/8 bg-black/30 px-3 py-1 text-[10px] uppercase tracking-[0.22em] text-zinc-400">
+                registry
+              </span>
+            </div>
+
+            <p className="mt-4 max-w-136 text-[0.92rem] leading-[1.75] text-zinc-400">
+              {project.summary}
+            </p>
+
+            <div className="mt-5 flex flex-wrap gap-2">
+              {project.stack.map((item) => (
+                <span
+                  key={item}
+                  className="rounded-full border border-white/6 bg-white/3 px-3 py-1 text-[10px] uppercase tracking-[0.18em] text-zinc-500"
+                >
+                  {item}
+                </span>
+              ))}
+            </div>
+
+            <div className="mt-6 grid gap-3 border-t border-white/6 pt-4 sm:grid-cols-2">
+              {project.sections.map((section) => (
+                <div key={section.title}>
+                  <p className="text-[10px] uppercase tracking-[0.24em] text-zinc-600">
+                    {section.title}
                   </p>
 
-                  <h3 className="mt-2 text-lg font-medium tracking-[-0.03em] text-zinc-100">
-                    {project.title}
-                  </h3>
+                  <p className="mt-2 text-[0.88rem] leading-[1.7] text-zinc-400">
+                    {section.description}
+                  </p>
                 </div>
-
-                <span className="rounded-full border border-white/8 bg-black/30 px-3 py-1 text-[10px] uppercase tracking-[0.22em] text-zinc-400">
-                  registry
-                </span>
-              </div>
-
-              <p className="mt-4 max-w-136 text-[0.92rem] leading-[1.75] text-zinc-400">
-                {project.summary}
-              </p>
-
-              <div className="mt-5 flex flex-wrap gap-2">
-                {project.stack.map((item) => (
-                  <span
-                    key={item}
-                    className="rounded-full border border-white/6 bg-white/3 px-3 py-1 text-[10px] uppercase tracking-[0.18em] text-zinc-500"
-                  >
-                    {item}
-                  </span>
-                ))}
-              </div>
-
-              <div className="mt-6 grid gap-3 border-t border-white/6 pt-4 sm:grid-cols-2">
-                {project.sections.map((section) => (
-                  <div key={section.title}>
-                    <p className="text-[10px] uppercase tracking-[0.24em] text-zinc-600">
-                      {section.title}
-                    </p>
-
-                    <p className="mt-2 text-[0.88rem] leading-[1.7] text-zinc-400">
-                      {section.description}
-                    </p>
-                  </div>
-                ))}
-              </div>
-            </article>
-          ))}
-        </div>
+              ))}
+            </div>
+          </article>
+        ))}
       </div>
     </div>
   );

@@ -11,7 +11,7 @@ export function GlassPanel({
     <div
       className={cn(
         "relative overflow-hidden rounded-[28px]",
-        "border border-white/[0.06]",
+        "border border-white/6",
         "bg-[#121214]/80",
         "backdrop-blur-xl",
         "shadow-[0_20px_80px_rgba(0,0,0,0.42)]",
