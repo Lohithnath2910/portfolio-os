@@ -7,12 +7,12 @@ import { Resizable } from "re-resizable";
 import { GlassPanel } from "@/components/ui/glass-panel";
 import { useWorkspaceStore } from "@/store/workspace-store";
 import { WorkspaceWindow } from "@/types/window";
-import { rafThrottle } from "@/lib/throttle";
 
 type WindowProps = {
   window: WorkspaceWindow;
 };
 
+// Resize constraints
 const RESIZE_MIN = {
   width: 520,
   height: 420,
@@ -23,10 +23,11 @@ const RESIZE_MAX = {
   height: 760,
 };
 
-const MIN_VISIBLE = 60; // Min pixels visible for window interaction
+// Viewport constraints for bouncing back
+const BOUNCE_DISTANCE = 60; // Min pixels visible
 
 export function Window({
-  window,
+  window: windowData,
 }: WindowProps) {
   const {
     closeWindow,
@@ -36,43 +37,8 @@ export function Window({
     windows,
   } = useWorkspaceStore();
 
-  const [bounds, setBounds] = useState({
-    width: 1920,
-    height: 1080,
-  });
-
-  // Update bounds on resize
-  useEffect(() => {
-    const handleResize = () => {
-      setBounds({
-        width: window.innerWidth,
-        height: window.innerHeight,
-      });
-    };
-
-    if (typeof window !== "undefined") {
-      handleResize();
-      window.addEventListener(
-        "resize",
-        handleResize,
-      );
-      return () =>
-        window.removeEventListener(
-          "resize",
-          handleResize,
-        );
-    }
-  }, []);
-
-  const resizeThrottleRef = useRef(
-    rafThrottle((
-      id: string,
-      width: number,
-      height: number,
-    ) => {
-      updateWindowSize(id, width, height);
-    }),
-  );
+  // Track if currently resizing to disable drag
+  const [isResizing, setIsResizing] = useState(false);
 
   const highestZ = Math.max(
     0,
@@ -82,112 +48,198 @@ export function Window({
   );
 
   const isFocused =
-    window.zIndex === highestZ;
+    windowData.zIndex === highestZ;
 
-  const constrainPosition = useCallback(
-    (x: number, y: number) => {
-      const minX = -(
-        window.width - MIN_VISIBLE
-      );
-      const maxX =
-        bounds.width - MIN_VISIBLE;
-      const minY = -(
-        window.height - MIN_VISIBLE
-      );
-      const maxY =
-        bounds.height - MIN_VISIBLE;
-
+  // Get viewport dimensions
+  const getViewportDims = useCallback(
+    () => {
+      if (typeof globalThis ===
+        "undefined"
+      ) {
+        return {
+          width: 1920,
+          height: 1080,
+        };
+      }
       return {
-        x: Math.max(
-          minX,
-          Math.min(x, maxX),
-        ),
-        y: Math.max(
-          minY,
-          Math.min(y, maxY),
-        ),
+        width:
+          globalThis.innerWidth ||
+          1920,
+        height:
+          globalThis.innerHeight ||
+          1080,
       };
     },
-    [bounds.width, bounds.height, window.width, window.height],
+    [],
   );
 
-  const handleResize = useCallback(
+  // Calculate if window is out of bounds and return bounce target
+  const calculateBounceTarget = useCallback(
     (
-      _event: any,
-      _direction: any,
-      ref: HTMLElement,
-    ) => {
-      resizeThrottleRef.current(
-        window.id,
-        ref.offsetWidth,
-        ref.offsetHeight,
-      );
+      x: number,
+      y: number,
+      width: number,
+      height: number,
+    ): { x: number; y: number } => {
+      const viewport =
+        getViewportDims();
+
+      let bounceX = x;
+      let bounceY = y;
+
+      // Check horizontal bounds
+      if (
+        x + width <
+        BOUNCE_DISTANCE
+      ) {
+        // Too far left
+        bounceX =
+          BOUNCE_DISTANCE -
+          width;
+      } else if (
+        x >
+        viewport.width -
+          BOUNCE_DISTANCE
+      ) {
+        // Too far right
+        bounceX =
+          viewport.width -
+          BOUNCE_DISTANCE;
+      }
+
+      // Check vertical bounds
+      if (
+        y + height <
+        BOUNCE_DISTANCE
+      ) {
+        // Too far up
+        bounceY =
+          BOUNCE_DISTANCE -
+          height;
+      } else if (
+        y >
+        viewport.height -
+          BOUNCE_DISTANCE
+      ) {
+        // Too far down
+        bounceY =
+          viewport.height -
+          BOUNCE_DISTANCE;
+      }
+
+      return { x: bounceX, y: bounceY };
     },
-    [window.id],
+    [getViewportDims],
   );
+
+  // Monitor position and trigger bounce if out of bounds
+  useEffect(() => {
+    const target =
+      calculateBounceTarget(
+        windowData.x,
+        windowData.y,
+        windowData.width,
+        windowData.height,
+      );
+
+    const isOutOfBounds =
+      target.x !==
+        windowData.x ||
+      target.y !==
+        windowData.y;
+
+    if (isOutOfBounds) {
+      updateWindowPosition(
+        windowData.id,
+        target.x,
+        target.y,
+      );
+    }
+  }, [
+    windowData.x,
+    windowData.y,
+    windowData.width,
+    windowData.height,
+    calculateBounceTarget,
+    windowData.id,
+    updateWindowPosition,
+  ]);
 
   return (
     <motion.div
-      drag
+      drag={!isResizing}
       dragMomentum={false}
       dragElastic={0.15}
-      onPointerDown={() =>
-        focusWindow(window.id)
-      }
+      suppressHydrationWarning
+      onPointerDown={() => {
+        if (!isResizing) {
+          focusWindow(windowData.id);
+        }
+      }}
       onDragEnd={(_, info) => {
-        const newX =
-          window.x + info.offset.x;
-        const newY =
-          window.y + info.offset.y;
+        if (isResizing) return;
 
-        const {
-          x: constrainedX,
-          y: constrainedY,
-        } = constrainPosition(
-          newX,
-          newY,
-        );
+        const newX =
+          windowData.x + info.offset.x;
+        const newY =
+          windowData.y + info.offset.y;
 
         updateWindowPosition(
-          window.id,
-          constrainedX,
-          constrainedY,
+          windowData.id,
+          newX,
+          newY,
         );
       }}
       initial={{
         opacity: 0,
         scale: 0.96,
-        y: 20,
       }}
       animate={{
         opacity: 1,
         scale: 1,
-        y: 0,
+        x: windowData.x,
+        y: windowData.y,
       }}
       exit={{
         opacity: 0,
         scale: 0.96,
-        y: 10,
       }}
       transition={{
-        duration: 0.22,
-        ease: [0.16, 1, 0.3, 1],
+        opacity: {
+          duration: 0.22,
+          ease: [0.16, 1, 0.3, 1],
+        },
+        scale: {
+          duration: 0.22,
+          ease: [0.16, 1, 0.3, 1],
+        },
+        x: {
+          type: "spring",
+          stiffness: 340,
+          damping: 30,
+          mass: 1,
+        },
+        y: {
+          type: "spring",
+          stiffness: 340,
+          damping: 30,
+          mass: 1,
+        },
       }}
       style={{
-        x: window.x,
-        y: window.y,
-        zIndex: window.zIndex,
+        zIndex: windowData.zIndex,
+        cursor: "grab",
       }}
-      className="absolute left-0 top-0 cursor-grab active:cursor-grabbing"
+      className="absolute left-0 top-0 active:cursor-grabbing"
     >
       <Resizable
         defaultSize={{
-          width: window.width,
-          height: window.height,
+          width: windowData.width,
+          height: windowData.height,
         }}
         size={{
-          width: window.width,
-          height: window.height,
+          width: windowData.width,
+          height: windowData.height,
         }}
         minWidth={RESIZE_MIN.width}
         maxWidth={RESIZE_MAX.width}
@@ -195,8 +247,6 @@ export function Window({
         maxHeight={RESIZE_MAX.height}
         enable={{
           bottomRight: true,
-          bottom: false,
-          right: false,
           top: false,
           left: false,
           topLeft: false,
@@ -205,39 +255,59 @@ export function Window({
         }}
         handleStyles={{
           bottomRight: {
-            width: "20px",
-            height: "20px",
-            right: "0",
-            bottom: "0",
+            width: "24px",
+            height: "24px",
+            right: "-2px",
+            bottom: "-2px",
             cursor: "nwse-resize",
             background:
               "transparent",
-            zIndex: 40,
+            zIndex: 50,
           },
         }}
         handleClasses={{
           bottomRight:
-            "group relative transition-opacity hover:opacity-100",
+            "group relative hover:opacity-100",
         }}
-        onResize={handleResize}
+        onResizeStart={() => {
+          setIsResizing(true);
+        }}
+        onResizeStop={() => {
+          setIsResizing(false);
+        }}
+        onResize={(
+          _event,
+          _direction,
+          ref,
+        ) => {
+          updateWindowSize(
+            windowData.id,
+            ref.offsetWidth,
+            ref.offsetHeight,
+          );
+        }}
       >
         <GlassPanel
+          suppressHydrationWarning
           className={`relative h-full w-full overflow-hidden transition-all duration-300 ${
             isFocused
               ? "brightness-100 opacity-100"
-              : "brightness-[0.72] opacity-70"
+              : "brightness-100 opacity-100 ring-1 ring-white/5"
           }`}
         >
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.04),transparent_38%)]" />
 
-          <div className="flex items-center justify-between border-b border-white/5 px-6 py-4">
+          <div
+            data-drag-handle
+            className="flex cursor-grab items-center justify-between border-b border-white/5 px-6 py-4 active:cursor-grabbing"
+          >
             <div className="flex items-center gap-2">
               <button
                 type="button"
                 onMouseDown={(event) => {
                   event.stopPropagation();
 
-                  closeWindow(window.id);
+                  closeWindow(windowData.id);
                 }}
                 className="relative z-50 h-3 w-3 rounded-full bg-red-400/90 shadow-[0_0_0px_rgba(248,113,113,0)] transition-all duration-200 hover:scale-125 hover:bg-red-300 hover:shadow-[0_0_12px_rgba(248,113,113,0.45)]"
               />
@@ -248,7 +318,7 @@ export function Window({
             </div>
 
             <p className="text-[11px] tracking-[0.22em] text-zinc-600">
-              {window.type.toUpperCase()}
+              {windowData.type.toUpperCase()}
             </p>
 
             <div className="w-10" />
@@ -261,16 +331,16 @@ export function Window({
               </p>
 
               <h1 className="max-w-[16ch] text-[clamp(2.8rem,6cqi,5rem)] font-semibold leading-[0.92] tracking-[-0.08em] text-zinc-100">
-                {window.type === "about" &&
+                {windowData.type === "about" &&
                   "Engineering systems with calm precision."}
 
-                {window.type === "projects" &&
+                {windowData.type === "projects" &&
                   "Building immersive software products end-to-end."}
 
-                {window.type === "experience" &&
+                {windowData.type === "experience" &&
                   "Designing scalable systems with product thinking."}
 
-                {window.type === "terminal" &&
+                {windowData.type === "terminal" &&
                   "Command-driven interaction for intelligent workflows."}
               </h1>
 
@@ -293,7 +363,7 @@ export function Window({
                 </p>
               </div>
 
-              <p className="font-[var(--font-handwritten)] text-[clamp(1.8rem,2cqi,2.6rem)] text-zinc-500">
+              <p className="font-(--font-handwritten) text-[clamp(1.8rem,2cqi,2.6rem)] text-zinc-500">
                 built with intent
               </p>
             </div>

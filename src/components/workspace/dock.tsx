@@ -39,7 +39,7 @@ export function Dock() {
   useWorkspaceStore();
 
   return (
-    <div className="absolute bottom-10 left-1/2 z-50 -translate-x-1/2">
+    <div className="absolute bottom-10 left-1/2 z-9999 -translate-x-1/2">
       <motion.div
         whileHover={{
           scale: 1.04,
@@ -50,7 +50,7 @@ export function Dock() {
           stiffness: 260,
           damping: 18,
         }}
-        className="flex items-center gap-4 rounded-[32px] border border-white/[0.06] bg-[#111214]/82 px-5 py-5 shadow-[0_20px_60px_rgba(0,0,0,0.45)] backdrop-blur-2xl"
+        className="flex items-center gap-4 rounded-4xl border border-white/6 bg-[#111214]/82 px-5 py-5 shadow-[0_20px_60px_rgba(0,0,0,0.45)] backdrop-blur-2xl"
       >
         {items.map((item) => {
           const Icon = item.icon;
@@ -80,10 +80,10 @@ export function Dock() {
                 damping: 14,
                 mass: 0.5,
               }}
-              className={`group relative flex h-[62px] w-[62px] origin-center items-center justify-center rounded-[20px] border transition-colors duration-200 ${
+              className={`group relative flex h-15.5 w-15.5 origin-center items-center justify-center rounded-[20px] border transition-colors duration-200 $
                 isActive
-                  ? "border-white/[0.08] bg-white/[0.07]"
-                  : "border-white/[0.03] bg-white/[0.035]"
+                  ? "border-white/8 bg-white/7"
+                  : "border-white/3 bg-white/4"
               }`}
             >
               <Icon
@@ -96,14 +96,14 @@ export function Dock() {
                 }`}
               />
 
-              <div className="pointer-events-none absolute -top-11 left-1/2 -translate-x-1/2 rounded-full border border-white/[0.04] bg-black/40 px-3 py-1 text-[10px] tracking-[0.12em] text-zinc-300 opacity-0 backdrop-blur-xl transition-all duration-150 group-hover:opacity-100">
+              <div className="pointer-events-none absolute -top-11 left-1/2 -translate-x-1/2 rounded-full border border-white/4 bg-black/40 px-3 py-1 text-[10px] tracking-[0.12em] text-zinc-300 opacity-0 backdrop-blur-xl transition-all duration-150 group-hover:opacity-100">
                 {item.label}
               </div>
 
               <div
                 className={`absolute -bottom-2 rounded-full transition-all duration-200 ${
                   isActive
-                    ? "h-[4px] w-[16px] bg-zinc-200"
+                    ? "h-1 w-4 bg-zinc-200"
                     : ": opacity-0"
                 }`}
               />

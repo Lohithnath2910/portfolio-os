@@ -6,21 +6,24 @@ export function throttle<T extends (...args: any[]) => void>(
   func: T,
   limit: number,
 ): (...args: Parameters<T>) => void {
-  let inThrottle: boolean;
-  let lastRan: number;
+  let timeoutId: ReturnType<typeof setTimeout> | null = null;
+  let lastRan = 0;
 
   return function (...args: Parameters<T>) {
-    if (!lastRan) {
+    if (lastRan === 0) {
       func(...args);
       lastRan = Date.now();
     } else {
-      clearTimeout(inThrottle as any);
-      inThrottle = setTimeout(() => {
-        if (Date.now() - lastRan >= limit) {
-          func(...args);
-          lastRan = Date.now();
-        }
-      }, limit - (Date.now() - lastRan));
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
+
+      const remaining = limit - (Date.now() - lastRan);
+      timeoutId = setTimeout(() => {
+        func(...args);
+        lastRan = Date.now();
+        timeoutId = null;
+      }, Math.max(0, remaining));
     }
   };
 }
@@ -33,10 +36,12 @@ export function debounce<T extends (...args: any[]) => void>(
   func: T,
   delay: number,
 ): (...args: Parameters<T>) => void {
-  let timeoutId: NodeJS.Timeout;
+  let timeoutId: ReturnType<typeof setTimeout> | null = null;
 
   return function (...args: Parameters<T>) {
-    clearTimeout(timeoutId);
+    if (timeoutId) {
+      clearTimeout(timeoutId);
+    }
     timeoutId = setTimeout(() => {
       func(...args);
     }, delay);
