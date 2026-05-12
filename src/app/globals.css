@@ -1,26 +1,102 @@
 @import "tailwindcss";
+@import "@fontsource/ibm-plex-mono";
+@import "@fontsource/caveat";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* COLORS */
+  --bg-primary: #0f0f10;
+  --bg-secondary: #151516;
+
+  --surface-primary: rgba(24, 24, 27, 0.72);
+  --surface-elevated: rgba(32, 32, 36, 0.82);
+  --surface-glass: rgba(255, 255, 255, 0.04);
+
+  --border-subtle: rgba(255, 255, 255, 0.08);
+  --border-strong: rgba(255, 255, 255, 0.14);
+
+  --text-primary: rgba(250, 250, 250, 0.96);
+  --text-secondary: rgba(212, 212, 216, 0.72);
+
+  --accent-muted: #b6ada1;
+
+  /* SHADOWS */
+  --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.18);
+  --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.24);
+  --shadow-md: 0 10px 30px rgba(0, 0, 0, 0.32);
+  --shadow-xl: 0 24px 80px rgba(0, 0, 0, 0.42);
+
+  /* RADIUS */
+  --radius-sm: 10px;
+  --radius-md: 16px;
+  --radius-lg: 24px;
+  --radius-xl: 32px;
+
+  /* MOTION */
+  --ease-premium: cubic-bezier(0.16, 1, 0.3, 1);
+
+  --duration-fast: 150ms;
+  --duration-normal: 250ms;
+  --duration-slow: 350ms;
+
+  /* GLASS */
+  --glass-opacity: 0.72;
+  --glass-border: rgba(255, 255, 255, 0.08);
+  --glass-highlight: rgba(255, 255, 255, 0.04);
+
+  /* TYPOGRAPHY */
+  --font-display: var(--font-geist);
+  --font-body: var(--font-manrope);
+  --font-mono: "IBM Plex Mono", monospace;
+  --font-handwritten: "Caveat", cursive;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+* {
+  box-sizing: border-box;
+  border-color: var(--border-subtle);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html {
+  scroll-behavior: smooth;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  margin: 0;
+  min-height: 100vh;
+
+  background:
+    radial-gradient(
+      circle at top,
+      rgba(255, 255, 255, 0.03),
+      transparent 40%
+    ),
+    var(--bg-primary);
+
+  color: var(--text-primary);
+
+  font-family: var(--font-body);
+
+  overflow-x: hidden;
+
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+}
+
+body::before {
+  content: "";
+
+  position: fixed;
+  inset: 0;
+
+  pointer-events: none;
+
+  opacity: 0.035;
+
+  background-image:
+    repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.018) 0 1px, transparent 1px 3px),
+    repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.012) 0 1px, transparent 1px 4px);
+  background-size: 100% 100%;
+}
+
+::selection {
+  background: rgba(255, 255, 255, 0.12);
 }
