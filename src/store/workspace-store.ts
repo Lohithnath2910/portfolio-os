@@ -5,6 +5,43 @@ import {
   WorkspaceWindow,
 } from "@/types/window";
 
+const MIN_VISIBLE = 60; // Minimum pixels visible for window dragging
+
+const getViewportBounds = () => {
+  if (typeof window === "undefined") {
+    return {
+      width: 1920,
+      height: 1080,
+    };
+  }
+  return {
+    width: window.innerWidth,
+    height: window.innerHeight,
+  };
+};
+
+/**
+ * Constrains window position within viewport bounds
+ * Ensures window can always be dragged/interacted with
+ */
+const constrainPosition = (
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+): { x: number; y: number } => {
+  const bounds = getViewportBounds();
+  const minX = -(width - MIN_VISIBLE);
+  const maxX = bounds.width - MIN_VISIBLE;
+  const minY = -(height - MIN_VISIBLE);
+  const maxY = bounds.height - MIN_VISIBLE;
+
+  return {
+    x: Math.max(minX, Math.min(x, maxX)),
+    y: Math.max(minY, Math.min(y, maxY)),
+  };
+};
+
 type WorkspaceState = {
   windows: WorkspaceWindow[];
 
@@ -173,6 +210,23 @@ export const useWorkspaceStore =
         x,
         y,
       ) => {
+        const windowToUpdate =
+          get().windows.find(
+            (w) => w.id === id,
+          );
+
+        if (!windowToUpdate) return;
+
+        const {
+          x: constrainedX,
+          y: constrainedY,
+        } = constrainPosition(
+          x,
+          y,
+          windowToUpdate.width,
+          windowToUpdate.height,
+        );
+
         set({
           windows:
             get().windows.map(
@@ -180,8 +234,8 @@ export const useWorkspaceStore =
                 window.id === id
                   ? {
                       ...window,
-                      x,
-                      y,
+                      x: constrainedX,
+                      y: constrainedY,
                     }
                   : window,
             ),

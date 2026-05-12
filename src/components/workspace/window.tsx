@@ -1,15 +1,29 @@
 "use client";
 
+import { useCallback, useRef, useEffect, useState } from "react";
 import { motion } from "motion/react";
 import { Resizable } from "re-resizable";
 
 import { GlassPanel } from "@/components/ui/glass-panel";
 import { useWorkspaceStore } from "@/store/workspace-store";
 import { WorkspaceWindow } from "@/types/window";
+import { rafThrottle } from "@/lib/throttle";
 
 type WindowProps = {
   window: WorkspaceWindow;
 };
+
+const RESIZE_MIN = {
+  width: 520,
+  height: 420,
+};
+
+const RESIZE_MAX = {
+  width: 1100,
+  height: 760,
+};
+
+const MIN_VISIBLE = 60; // Min pixels visible for window interaction
 
 export function Window({
   window,
@@ -22,6 +36,44 @@ export function Window({
     windows,
   } = useWorkspaceStore();
 
+  const [bounds, setBounds] = useState({
+    width: 1920,
+    height: 1080,
+  });
+
+  // Update bounds on resize
+  useEffect(() => {
+    const handleResize = () => {
+      setBounds({
+        width: window.innerWidth,
+        height: window.innerHeight,
+      });
+    };
+
+    if (typeof window !== "undefined") {
+      handleResize();
+      window.addEventListener(
+        "resize",
+        handleResize,
+      );
+      return () =>
+        window.removeEventListener(
+          "resize",
+          handleResize,
+        );
+    }
+  }, []);
+
+  const resizeThrottleRef = useRef(
+    rafThrottle((
+      id: string,
+      width: number,
+      height: number,
+    ) => {
+      updateWindowSize(id, width, height);
+    }),
+  );
+
   const highestZ = Math.max(
     0,
     ...windows.map(
@@ -32,27 +84,74 @@ export function Window({
   const isFocused =
     window.zIndex === highestZ;
 
+  const constrainPosition = useCallback(
+    (x: number, y: number) => {
+      const minX = -(
+        window.width - MIN_VISIBLE
+      );
+      const maxX =
+        bounds.width - MIN_VISIBLE;
+      const minY = -(
+        window.height - MIN_VISIBLE
+      );
+      const maxY =
+        bounds.height - MIN_VISIBLE;
+
+      return {
+        x: Math.max(
+          minX,
+          Math.min(x, maxX),
+        ),
+        y: Math.max(
+          minY,
+          Math.min(y, maxY),
+        ),
+      };
+    },
+    [bounds.width, bounds.height, window.width, window.height],
+  );
+
+  const handleResize = useCallback(
+    (
+      _event: any,
+      _direction: any,
+      ref: HTMLElement,
+    ) => {
+      resizeThrottleRef.current(
+        window.id,
+        ref.offsetWidth,
+        ref.offsetHeight,
+      );
+    },
+    [window.id],
+  );
+
   return (
     <motion.div
       drag
-      dragMomentum
-      dragElastic={0.04}
-      dragTransition={{
-        power: 0.08,
-        timeConstant: 120,
-        modifyTarget: (target) =>
-          Math.round(target),
-        bounceStiffness: 320,
-        bounceDamping: 34,
-      }}
+      dragMomentum={false}
+      dragElastic={0.15}
       onPointerDown={() =>
         focusWindow(window.id)
       }
       onDragEnd={(_, info) => {
+        const newX =
+          window.x + info.offset.x;
+        const newY =
+          window.y + info.offset.y;
+
+        const {
+          x: constrainedX,
+          y: constrainedY,
+        } = constrainPosition(
+          newX,
+          newY,
+        );
+
         updateWindowPosition(
           window.id,
-          window.x + info.offset.x,
-          window.y + info.offset.y,
+          constrainedX,
+          constrainedY,
         );
       }}
       initial={{
@@ -90,44 +189,44 @@ export function Window({
           width: window.width,
           height: window.height,
         }}
-        minWidth={520}
-        maxWidth={1100}
-        minHeight={420}
-        maxHeight={760}
+        minWidth={RESIZE_MIN.width}
+        maxWidth={RESIZE_MAX.width}
+        minHeight={RESIZE_MIN.height}
+        maxHeight={RESIZE_MAX.height}
         enable={{
           bottomRight: true,
+          bottom: false,
+          right: false,
+          top: false,
+          left: false,
+          topLeft: false,
+          topRight: false,
+          bottomLeft: false,
         }}
         handleStyles={{
           bottomRight: {
-            width: "18px",
-            height: "18px",
+            width: "20px",
+            height: "20px",
             right: "0",
             bottom: "0",
             cursor: "nwse-resize",
+            background:
+              "transparent",
+            zIndex: 40,
           },
         }}
-        onResize={(
-          _event,
-          _direction,
-          ref,
-        ) => {
-          updateWindowSize(
-            window.id,
-            ref.offsetWidth,
-            ref.offsetHeight,
-          );
+        handleClasses={{
+          bottomRight:
+            "group relative transition-opacity hover:opacity-100",
         }}
+        onResize={handleResize}
       >
         <GlassPanel
-          className={`
-            h-full w-full overflow-hidden
-            transition-all duration-300
-            ${
-              isFocused
-                ? "brightness-100 opacity-100"
-                : "brightness-[0.72] opacity-70"
-            }
-          `}
+          className={`relative h-full w-full overflow-hidden transition-all duration-300 ${
+            isFocused
+              ? "brightness-100 opacity-100"
+              : "brightness-[0.72] opacity-70"
+          }`}
         >
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.04),transparent_38%)]" />
 
@@ -198,6 +297,12 @@ export function Window({
                 built with intent
               </p>
             </div>
+          </div>
+
+          {/* Resize handle indicator */}
+          <div className="absolute bottom-0 right-0 flex h-5 w-5 items-center justify-center opacity-0 transition-opacity duration-200 group-hover:opacity-100">
+            <div className="h-1 w-3 rounded-full bg-white/30" />
+            <div className="-ml-1.5 h-3 w-1 rounded-full bg-white/30" />
           </div>
         </GlassPanel>
       </Resizable>
