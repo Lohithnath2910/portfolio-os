@@ -5,6 +5,7 @@ import { motion } from "motion/react";
 import { Resizable } from "re-resizable";
 
 import { GlassPanel } from "@/components/ui/glass-panel";
+import { ProjectsWindow } from "@/components/workspace/windows/projects-window";
 import { useWorkspaceStore } from "@/store/workspace-store";
 import { WorkspaceWindow } from "@/types/window";
 import { rafThrottle } from "@/lib/throttle";
@@ -335,50 +336,51 @@ export const Window = memo(function Window({
             <div className="w-10" />
           </div>
 
-          <div className="flex h-[calc(100%-57px)] flex-col justify-between px-[clamp(1.5rem,2cqi,3rem)] pb-[clamp(1.5rem,2cqi,3rem)] pt-[clamp(2rem,3cqi,4rem)]">
-            <div>
-              <p className="mb-5 text-[11px] uppercase tracking-[0.32em] text-zinc-600">
-                SYSTEM WORKSPACE
-              </p>
-
-              <h1 className="max-w-[16ch] text-[clamp(2.8rem,6cqi,5rem)] font-semibold leading-[0.92] tracking-[-0.08em] text-zinc-100">
-                {windowData.type === "about" &&
-                  "Engineering systems with calm precision."}
-
-                {windowData.type === "projects" &&
-                  "Building immersive software products end-to-end."}
-
-                {windowData.type === "experience" &&
-                  "Designing scalable systems with product thinking."}
-
-                {windowData.type === "terminal" &&
-                  "Command-driven interaction for intelligent workflows."}
-              </h1>
-
-              <p className="mt-10 max-w-[60ch] text-[clamp(0.92rem,1.1cqi,1rem)] leading-[1.9] text-zinc-400">
-                Building premium software experiences across frontend systems,
-                AI tooling, infrastructure, product engineering, and immersive
-                interaction design.
-              </p>
-            </div>
-
-            <div className="flex items-end justify-between gap-10">
+          {windowData.type === "projects" ? (
+            <ProjectsWindow />
+          ) : (
+            <div className="flex h-[calc(100%-57px)] flex-col justify-between px-[clamp(1.5rem,2cqi,3rem)] pb-[clamp(1.5rem,2cqi,3rem)] pt-[clamp(2rem,3cqi,4rem)]">
               <div>
-                <p className="text-[11px] uppercase tracking-[0.28em] text-zinc-600">
-                  CURRENT FOCUS
+                <p className="mb-5 text-[11px] uppercase tracking-[0.32em] text-zinc-600">
+                  SYSTEM WORKSPACE
                 </p>
 
-                <p className="mt-3 max-w-[34ch] text-[clamp(0.82rem,1cqi,0.95rem)] leading-7 text-zinc-300">
-                  Full-stack systems, AI engineering, spatial interfaces,
-                  scalable architecture, and product-focused engineering.
+                <h1 className="max-w-[16ch] text-[clamp(2.8rem,6cqi,5rem)] font-semibold leading-[0.92] tracking-[-0.08em] text-zinc-100">
+                  {windowData.type === "about" &&
+                    "Engineering systems with calm precision."}
+
+                  {windowData.type === "experience" &&
+                    "Designing scalable systems with product thinking."}
+
+                  {windowData.type === "terminal" &&
+                    "Command-driven interaction for intelligent workflows."}
+                </h1>
+
+                <p className="mt-10 max-w-[60ch] text-[clamp(0.92rem,1.1cqi,1rem)] leading-[1.9] text-zinc-400">
+                  Building premium software experiences across frontend systems,
+                  AI tooling, infrastructure, product engineering, and immersive
+                  interaction design.
                 </p>
               </div>
 
-              <p className="font-(--font-handwritten) text-[clamp(1.8rem,2cqi,2.6rem)] text-zinc-500">
-                built with intent
-              </p>
+              <div className="flex items-end justify-between gap-10">
+                <div>
+                  <p className="text-[11px] uppercase tracking-[0.28em] text-zinc-600">
+                    CURRENT FOCUS
+                  </p>
+
+                  <p className="mt-3 max-w-[34ch] text-[clamp(0.82rem,1cqi,0.95rem)] leading-7 text-zinc-300">
+                    Full-stack systems, AI engineering, spatial interfaces,
+                    scalable architecture, and product-focused engineering.
+                  </p>
+                </div>
+
+                <p className="font-(--font-handwritten) text-[clamp(1.8rem,2cqi,2.6rem)] text-zinc-500">
+                  built with intent
+                </p>
+              </div>
             </div>
-          </div>
+          )}
 
           {/* Resize handle indicator */}
           <div className="absolute bottom-0 right-0 flex h-5 w-5 items-center justify-center opacity-0 transition-opacity duration-200 group-hover:opacity-100">

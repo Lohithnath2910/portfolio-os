@@ -100,3 +100,12 @@ body::before {
 ::selection {
   background: rgba(255, 255, 255, 0.12);
 }
+
+.scrollbar-none {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}
