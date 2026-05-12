@@ -1,12 +1,13 @@
 "use client";
 
-import { useCallback, useRef, useEffect, useState } from "react";
+import { memo, useCallback, useRef, useEffect, useState } from "react";
 import { motion } from "motion/react";
 import { Resizable } from "re-resizable";
 
 import { GlassPanel } from "@/components/ui/glass-panel";
 import { useWorkspaceStore } from "@/store/workspace-store";
 import { WorkspaceWindow } from "@/types/window";
+import { rafThrottle } from "@/lib/throttle";
 
 type WindowProps = {
   window: WorkspaceWindow;
@@ -26,7 +27,7 @@ const RESIZE_MAX = {
 // Viewport constraints for bouncing back
 const BOUNCE_DISTANCE = 60; // Min pixels visible
 
-export function Window({
+export const Window = memo(function Window({
   window: windowData,
 }: WindowProps) {
   const {
@@ -39,6 +40,15 @@ export function Window({
 
   // Track if currently resizing to disable drag
   const [isResizing, setIsResizing] = useState(false);
+  const resizeUpdateRef = useRef(
+    rafThrottle((
+      id: string,
+      width: number,
+      height: number,
+    ) => {
+      updateWindowSize(id, width, height);
+    }),
+  );
 
   const highestZ = Math.max(
     0,
@@ -229,6 +239,7 @@ export function Window({
       style={{
         zIndex: windowData.zIndex,
         cursor: "grab",
+        willChange: "transform",
       }}
       className="absolute left-0 top-0 active:cursor-grabbing"
     >
@@ -280,7 +291,7 @@ export function Window({
           _direction,
           ref,
         ) => {
-          updateWindowSize(
+          resizeUpdateRef.current(
             windowData.id,
             ref.offsetWidth,
             ref.offsetHeight,
@@ -378,4 +389,4 @@ export function Window({
       </Resizable>
     </motion.div>
   );
-}
+});
